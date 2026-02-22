@@ -436,16 +436,12 @@ function renderGrid() {
 
   // Draw all completed paths
   state.allPaths.forEach((path, idx) => {
-    const blocks = state.trialResults[idx] ? state.trialResults[idx].blocksWalked : path.length - 1;
-    const color = blocks === 4 ? '#00e676' : '#ffff00';
-    drawPath(ctx, path, color, cellSize, toScreen, 0.6);
+    drawPath(ctx, path, TRAIL_COLORS[idx % TRAIL_COLORS.length], cellSize, toScreen, 0.6);
   });
 
   // Draw current active path
   if (state.path.length > 1) {
-    const currentBlocks = state.path.length - 1;
-    const color = currentBlocks === 4 ? '#00e676' : '#ffff00';
-    drawPath(ctx, state.path, color, cellSize, toScreen, 1);
+    drawPath(ctx, state.path, TRAIL_COLORS[state.currentTrial % TRAIL_COLORS.length], cellSize, toScreen, 1);
   }
 
   // "Point of No Return" circle — avg farthest distance of lost trials
@@ -629,24 +625,8 @@ function renderGraph1() {
 function renderGraph2() {
   const data = state.trialResults.map(r => ({
     value: r.farthestDist,
-    blocksWalked: r.blocksWalked,
   }));
-  drawBarGraph(g2Ctx, graph2Canvas, data, 'Farthest Distance', 'Distance (blocks)', (d) => {
-    return d.blocksWalked === 4 ? '#00e676' : '#ffff00';
-  });
-  // Legend
-  const w = parseFloat(graph2Canvas.style.width) || graph2Canvas.width;
-  const ctx = g2Ctx;
-  ctx.font = '10px sans-serif';
-  ctx.fillStyle = '#00e676';
-  ctx.fillRect(w - 160, 8, 10, 10);
-  ctx.fillStyle = '#aaa';
-  ctx.textAlign = 'left';
-  ctx.fillText('4 Blocks (min trip)', w - 146, 17);
-  ctx.fillStyle = '#ffff00';
-  ctx.fillRect(w - 160, 22, 10, 10);
-  ctx.fillStyle = '#aaa';
-  ctx.fillText('More than 4', w - 146, 31);
+  drawBarGraph(g2Ctx, graph2Canvas, data, 'Farthest Distance', 'Distance (blocks)', () => '#7c4dff');
 }
 
 function renderGraph3() {
