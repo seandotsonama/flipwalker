@@ -57,6 +57,10 @@ The question: *How often do you actually make it back?*
 
 Just open `index.html` in any modern browser. No build step, no dependencies, no server required.
 
+Or public at:
+
+https://seandotsonama.github.io/flipwalker/
+
 ```bash
 open index.html
 ```
