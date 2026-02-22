@@ -599,34 +599,45 @@ function drawBarGraph(ctx, canvas, data, title, yLabel, colorFn) {
 }
 
 function renderGraph1() {
-  const maxFlips = parseInt(maxFlipsInput.value) || 500;
   const data = state.trialResults.map(r => ({
     value: r.blocksWalked,
+    blocksWalked: r.blocksWalked,
     returnedHome: r.returnedHome,
   }));
   drawBarGraph(g1Ctx, graph1Canvas, data, 'Blocks Walked', 'Blocks Walked', (d) => {
-    return d.returnedHome ? '#00e676' : '#ff5252';
+    if (!d.returnedHome) return '#ff5252';       // red: hit max flips
+    if (d.blocksWalked === 4) return '#00e676';   // green: minimum 4-block trip
+    return '#ffff00';                              // yellow: made it home but > 4
   });
   // Legend
   const w = parseFloat(graph1Canvas.style.width) || graph1Canvas.width;
   const ctx = g1Ctx;
   ctx.font = '10px sans-serif';
   ctx.fillStyle = '#00e676';
-  ctx.fillRect(w - 160, 8, 10, 10);
+  ctx.fillRect(w - 180, 8, 10, 10);
   ctx.fillStyle = '#aaa';
   ctx.textAlign = 'left';
-  ctx.fillText('Returned Home', w - 146, 17);
-  ctx.fillStyle = '#ff5252';
-  ctx.fillRect(w - 160, 22, 10, 10);
+  ctx.fillText('4 Blocks (min trip)', w - 166, 17);
+  ctx.fillStyle = '#ffff00';
+  ctx.fillRect(w - 180, 22, 10, 10);
   ctx.fillStyle = '#aaa';
-  ctx.fillText('Hit Max Flips', w - 146, 31);
+  ctx.fillText('Home (> 4 blocks)', w - 166, 31);
+  ctx.fillStyle = '#ff5252';
+  ctx.fillRect(w - 180, 36, 10, 10);
+  ctx.fillStyle = '#aaa';
+  ctx.fillText('Hit Max Flips', w - 166, 45);
 }
 
 function renderGraph2() {
   const data = state.trialResults.map(r => ({
     value: r.farthestDist,
+    blocksWalked: r.blocksWalked,
+    returnedHome: r.returnedHome,
   }));
-  drawBarGraph(g2Ctx, graph2Canvas, data, 'Farthest Distance', 'Distance (blocks)', () => '#7c4dff');
+  drawBarGraph(g2Ctx, graph2Canvas, data, 'Farthest Distance', 'Distance (blocks)', (d) => {
+    if (d.returnedHome && d.blocksWalked === 4) return '#00e676'; // green: 4-block trips
+    return '#7c4dff';                                              // purple: everything else
+  });
 }
 
 function renderGraph3() {
