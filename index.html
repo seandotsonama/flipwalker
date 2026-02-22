@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlipWalker</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a0f;
+    color: #e0e0e0;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    overflow-x: hidden;
+  }
+  header {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border-bottom: 2px solid #00f5ff33;
+  }
+  header h1 {
+    font-size: 28px;
+    font-weight: 800;
+    background: linear-gradient(90deg, #00f5ff, #ff00e5);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: 2px;
+  }
+  header .subtitle {
+    color: #888;
+    font-size: 13px;
+  }
+
+  .controls {
+    background: #111122;
+    padding: 14px 24px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+    border-bottom: 1px solid #222244;
+  }
+  .control-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .control-group label {
+    font-size: 12px;
+    color: #aaa;
+    white-space: nowrap;
+  }
+  .control-group input[type="number"] {
+    width: 80px;
+    padding: 6px 8px;
+    background: #1a1a2e;
+    border: 1px solid #333366;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 13px;
+    text-align: center;
+  }
+  .control-group input[type="number"]:focus {
+    outline: none;
+    border-color: #00f5ff;
+    box-shadow: 0 0 8px #00f5ff33;
+  }
+  button {
+    padding: 8px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  button:hover { transform: translateY(-1px); }
+  button:active { transform: translateY(0); }
+  #btnStart {
+    background: linear-gradient(135deg, #00c853, #00e676);
+    color: #000;
+  }
+  #btnPause {
+    background: linear-gradient(135deg, #ff9100, #ffab40);
+    color: #000;
+  }
+  #btnReset {
+    background: linear-gradient(135deg, #ff1744, #ff5252);
+    color: #fff;
+  }
+  #btnInstant {
+    background: linear-gradient(135deg, #7c4dff, #b388ff);
+    color: #fff;
+  }
+  button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .stats-bar {
+    background: #0d0d1a;
+    padding: 10px 24px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    border-bottom: 1px solid #222244;
+    font-size: 13px;
+  }
+  .stat {
+    display: flex;
+    gap: 6px;
+  }
+  .stat .stat-label { color: #888; }
+  .stat .stat-value { color: #00f5ff; font-weight: 700; }
+
+  .main-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 8px;
+    padding: 8px;
+    height: calc(100vh - 160px);
+    min-height: 500px;
+  }
+  .panel {
+    background: #111122;
+    border-radius: 8px;
+    border: 1px solid #222244;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .panel-header {
+    padding: 8px 14px;
+    background: #1a1a2e;
+    font-size: 12px;
+    font-weight: 600;
+    color: #aaa;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid #222244;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .panel-body {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+  canvas {
+    display: block;
+  }
+  .zoom-controls {
+    display: flex;
+    gap: 4px;
+  }
+  .zoom-controls button {
+    padding: 2px 10px;
+    font-size: 16px;
+    border-radius: 4px;
+    background: #333366;
+    color: #fff;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>FLIPWALKER</h1>
+  <span class="subtitle">Random Walk Coin-Flip Simulator</span>
+</header>
+
+<div class="controls">
+  <div class="control-group">
+    <label>Max Flips:</label>
+    <input type="number" id="maxFlips" value="500" min="1" max="100000">
+  </div>
+  <div class="control-group">
+    <label>Delay (ms):</label>
+    <input type="number" id="stepDelay" value="50" min="0" max="5000">
+  </div>
+  <div class="control-group">
+    <label>Trials:</label>
+    <input type="number" id="numTrials" value="1" min="1" max="1000">
+  </div>
+  <button id="btnStart">Start</button>
+  <button id="btnPause" disabled>Pause</button>
+  <button id="btnReset">Reset</button>
+  <button id="btnInstant">Instant Run</button>
+</div>
+
+<div class="stats-bar">
+  <div class="stat"><span class="stat-label">Trial:</span><span class="stat-value" id="statTrial">0 / 0</span></div>
+  <div class="stat"><span class="stat-label">Flips:</span><span class="stat-value" id="statFlips">0</span></div>
+  <div class="stat"><span class="stat-label">Blocks Walked:</span><span class="stat-value" id="statBlocks">0</span></div>
+  <div class="stat"><span class="stat-label">Farthest from Home:</span><span class="stat-value" id="statFarthest">0</span></div>
+  <div class="stat"><span class="stat-label">% Made It Home:</span><span class="stat-value" id="statHomePercent">—</span></div>
+  <div class="stat"><span class="stat-label">Avg Point of No Return:</span><span class="stat-value" id="statNoReturn">—</span></div>
+  <div class="stat"><span class="stat-label">Position:</span><span class="stat-value" id="statPos">(0, 0)</span></div>
+  <div class="stat"><span class="stat-label">Facing:</span><span class="stat-value" id="statFacing">North</span></div>
+  <div class="stat"><span class="stat-label">Status:</span><span class="stat-value" id="statStatus">Idle</span></div>
+</div>
+
+<div class="main-content">
+  <div class="panel">
+    <div class="panel-header">
+      <span>Grid View</span>
+      <div class="zoom-controls">
+        <button id="btnZoomIn">+</button>
+        <button id="btnZoomOut">−</button>
+        <button id="btnZoomFit">Fit</button>
+      </div>
+    </div>
+    <div class="panel-body" id="gridContainer">
+      <canvas id="gridCanvas"></canvas>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-header">Graph 1: Blocks Walked per Trial</div>
+    <div class="panel-body">
+      <canvas id="graph1Canvas"></canvas>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-header">Graph 2: Farthest Distance per Trial</div>
+    <div class="panel-body">
+      <canvas id="graph2Canvas"></canvas>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-header">Graph 3: (Reserved)</div>
+    <div class="panel-body">
+      <canvas id="graph3Canvas"></canvas>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== STATE =====
+const DIRECTIONS = [
+  { name: 'North', dx: 0, dy: 1 },
+  { name: 'East',  dx: 1, dy: 0 },
+  { name: 'South', dx: 0, dy: -1 },
+  { name: 'West',  dx: -1, dy: 0 },
+];
+
+const TRAIL_COLORS = [
+  '#00f5ff', '#ff00e5', '#00e676', '#ffab40', '#ff5252',
+  '#7c4dff', '#ffff00', '#00bcd4', '#e040fb', '#76ff03',
+  '#ff6e40', '#448aff', '#eeff41', '#ff4081', '#69f0ae',
+  '#40c4ff', '#ffd740', '#b9f6ca', '#ea80fc', '#84ffff',
+];
+
+let state = {
+  running: false,
+  paused: false,
+  instantMode: false,
+  // Walk state
+  x: 0,
+  y: 0,
+  facing: 0, // index into DIRECTIONS (0=N,1=E,2=S,3=W)
+  flips: 0,
+  blocksWalked: 0,
+  farthestDist: 0,
+  path: [{ x: 0, y: 0 }],
+  // Trials
+  currentTrial: 0,
+  totalTrials: 0,
+  trialResults: [], // { blocksWalked, farthestDist, returnedHome }
+  allPaths: [],     // array of paths for overlay
+  // Grid view
+  zoom: 1,
+  panX: 0,
+  panY: 0,
+  // Animation
+  animFrameId: null,
+  timeoutId: null,
+};
+
+// ===== DOM =====
+const maxFlipsInput = document.getElementById('maxFlips');
+const stepDelayInput = document.getElementById('stepDelay');
+const numTrialsInput = document.getElementById('numTrials');
+const btnStart = document.getElementById('btnStart');
+const btnPause = document.getElementById('btnPause');
+const btnReset = document.getElementById('btnReset');
+const btnInstant = document.getElementById('btnInstant');
+
+const gridCanvas = document.getElementById('gridCanvas');
+const gridCtx = gridCanvas.getContext('2d');
+const gridContainer = document.getElementById('gridContainer');
+
+const graph1Canvas = document.getElementById('graph1Canvas');
+const g1Ctx = graph1Canvas.getContext('2d');
+const graph2Canvas = document.getElementById('graph2Canvas');
+const g2Ctx = graph2Canvas.getContext('2d');
+const graph3Canvas = document.getElementById('graph3Canvas');
+const g3Ctx = graph3Canvas.getContext('2d');
+
+// ===== RESIZE =====
+function resizeAllCanvases() {
+  [
+    [gridCanvas, gridContainer],
+    [graph1Canvas, graph1Canvas.parentElement],
+    [graph2Canvas, graph2Canvas.parentElement],
+    [graph3Canvas, graph3Canvas.parentElement],
+  ].forEach(([canvas, container]) => {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = container.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    canvas.style.width = rect.width + 'px';
+    canvas.style.height = rect.height + 'px';
+    canvas.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+  });
+  renderAll();
+}
+window.addEventListener('resize', resizeAllCanvases);
+
+// ===== GRID RENDERING =====
+function getGridBounds() {
+  // Find bounds of all paths
+  let minX = -10, maxX = 10, minY = -10, maxY = 10;
+  const allPts = [...state.path];
+  state.allPaths.forEach(p => allPts.push(...p));
+  allPts.forEach(pt => {
+    minX = Math.min(minX, pt.x);
+    maxX = Math.max(maxX, pt.x);
+    minY = Math.min(minY, pt.y);
+    maxY = Math.max(maxY, pt.y);
+  });
+  // Expand to next 20-unit boundary
+  minX = Math.floor(minX / 20) * 20 - 2;
+  maxX = Math.ceil(maxX / 20) * 20 + 2;
+  minY = Math.floor(minY / 20) * 20 - 2;
+  maxY = Math.ceil(maxY / 20) * 20 + 2;
+  // Ensure minimum 20x20
+  if (maxX - minX < 22) { minX = -12; maxX = 12; }
+  if (maxY - minY < 22) { minY = -12; maxY = 12; }
+  return { minX, maxX, minY, maxY };
+}
+
+function renderGrid() {
+  const w = gridCanvas.style.width ? parseFloat(gridCanvas.style.width) : gridCanvas.width;
+  const h = gridCanvas.style.height ? parseFloat(gridCanvas.style.height) : gridCanvas.height;
+  const ctx = gridCtx;
+
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = '#0a0a14';
+  ctx.fillRect(0, 0, w, h);
+
+  const bounds = getGridBounds();
+  const rangeX = bounds.maxX - bounds.minX;
+  const rangeY = bounds.maxY - bounds.minY;
+
+  const baseCellSize = Math.min(w / rangeX, h / rangeY);
+  const cellSize = baseCellSize * state.zoom;
+
+  // Center with pan
+  const centerPixX = w / 2 + state.panX;
+  const centerPixY = h / 2 + state.panY;
+
+  function toScreen(gx, gy) {
+    return {
+      sx: centerPixX + gx * cellSize,
+      sy: centerPixY - gy * cellSize,
+    };
+  }
+
+  // Visible range
+  const visMinX = Math.floor((0 - centerPixX) / cellSize) - 1;
+  const visMaxX = Math.ceil((w - centerPixX) / cellSize) + 1;
+  const visMinY = Math.floor((centerPixY - h) / cellSize) - 1;
+  const visMaxY = Math.ceil(centerPixY / cellSize) + 1;
+
+  // Grid lines
+  ctx.strokeStyle = '#1a1a2e';
+  ctx.lineWidth = 0.5;
+  for (let gx = visMinX; gx <= visMaxX; gx++) {
+    const { sx } = toScreen(gx, 0);
+    ctx.beginPath();
+    ctx.moveTo(sx, 0);
+    ctx.lineTo(sx, h);
+    ctx.stroke();
+  }
+  for (let gy = visMinY; gy <= visMaxY; gy++) {
+    const { sy } = toScreen(0, gy);
+    ctx.beginPath();
+    ctx.moveTo(0, sy);
+    ctx.lineTo(w, sy);
+    ctx.stroke();
+  }
+
+  // Axes
+  ctx.strokeStyle = '#333366';
+  ctx.lineWidth = 1.5;
+  const originScreen = toScreen(0, 0);
+  ctx.beginPath(); ctx.moveTo(0, originScreen.sy); ctx.lineTo(w, originScreen.sy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(originScreen.sx, 0); ctx.lineTo(originScreen.sx, h); ctx.stroke();
+
+  // Axis labels if zoomed enough
+  if (cellSize > 15) {
+    ctx.fillStyle = '#555';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    for (let gx = visMinX; gx <= visMaxX; gx++) {
+      if (gx === 0) continue;
+      const { sx } = toScreen(gx, 0);
+      ctx.fillText(gx, sx, originScreen.sy + 3);
+    }
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (let gy = visMinY; gy <= visMaxY; gy++) {
+      if (gy === 0) continue;
+      const { sy } = toScreen(0, gy);
+      ctx.fillText(gy, originScreen.sx - 4, sy);
+    }
+  }
+
+  // HOME marker
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(originScreen.sx, originScreen.sy, Math.max(4, cellSize * 0.2), 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#00f5ff';
+  ctx.font = 'bold 10px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('HOME', originScreen.sx, originScreen.sy - Math.max(6, cellSize * 0.25));
+
+  // Draw all completed paths
+  state.allPaths.forEach((path, idx) => {
+    drawPath(ctx, path, TRAIL_COLORS[idx % TRAIL_COLORS.length], cellSize, toScreen, 0.6);
+  });
+
+  // Draw current active path
+  if (state.path.length > 1) {
+    drawPath(ctx, state.path, TRAIL_COLORS[state.currentTrial % TRAIL_COLORS.length], cellSize, toScreen, 1);
+  }
+
+  // "Point of No Return" circle — avg farthest distance of lost trials
+  const lostTrials = state.trialResults.filter(r => !r.returnedHome);
+  if (lostTrials.length > 0) {
+    const avgMaxDist = lostTrials.reduce((sum, r) => sum + r.farthestDist, 0) / lostTrials.length;
+    const radiusPx = avgMaxDist * cellSize;
+    ctx.save();
+    ctx.strokeStyle = '#ff5252';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([8, 6]);
+    ctx.globalAlpha = 0.7;
+    ctx.beginPath();
+    ctx.arc(originScreen.sx, originScreen.sy, radiusPx, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // Label
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#ff5252';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(`Avg Point of No Return: ${avgMaxDist.toFixed(1)} blocks`, originScreen.sx + radiusPx + 6, originScreen.sy - 4);
+    ctx.restore();
+  }
+
+  // Walker position
+  if (state.running || state.path.length > 1) {
+    const wPos = toScreen(state.x, state.y);
+    // Direction arrow
+    const dir = DIRECTIONS[state.facing];
+    const arrowLen = cellSize * 0.4;
+    ctx.strokeStyle = '#ff0';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(wPos.sx, wPos.sy);
+    ctx.lineTo(wPos.sx + dir.dx * arrowLen, wPos.sy - dir.dy * arrowLen);
+    ctx.stroke();
+    // Dot
+    ctx.fillStyle = '#ff0';
+    ctx.beginPath();
+    ctx.arc(wPos.sx, wPos.sy, Math.max(3, cellSize * 0.15), 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawPath(ctx, path, color, cellSize, toScreen, alpha) {
+  if (path.length < 2) return;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = Math.max(1.5, cellSize * 0.08);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  const start = toScreen(path[0].x, path[0].y);
+  ctx.moveTo(start.sx, start.sy);
+  for (let i = 1; i < path.length; i++) {
+    const pt = toScreen(path[i].x, path[i].y);
+    ctx.lineTo(pt.sx, pt.sy);
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
+// ===== GRAPH RENDERING =====
+function drawBarGraph(ctx, canvas, data, title, yLabel, colorFn) {
+  const w = parseFloat(canvas.style.width) || canvas.width;
+  const h = parseFloat(canvas.style.height) || canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = '#0a0a14';
+  ctx.fillRect(0, 0, w, h);
+
+  const marginLeft = 60, marginRight = 20, marginTop = 10, marginBottom = 40;
+  const plotW = w - marginLeft - marginRight;
+  const plotH = h - marginTop - marginBottom;
+
+  if (data.length === 0) {
+    ctx.fillStyle = '#444';
+    ctx.font = '14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('No data yet', w / 2, h / 2);
+    return;
+  }
+
+  const maxVal = Math.max(...data.map(d => d.value), 1);
+
+  // Axes
+  ctx.strokeStyle = '#444';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(marginLeft, marginTop);
+  ctx.lineTo(marginLeft, marginTop + plotH);
+  ctx.lineTo(marginLeft + plotW, marginTop + plotH);
+  ctx.stroke();
+
+  // Y-axis ticks
+  ctx.fillStyle = '#888';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  const yTicks = 5;
+  for (let i = 0; i <= yTicks; i++) {
+    const val = Math.round(maxVal * i / yTicks);
+    const y = marginTop + plotH - (plotH * i / yTicks);
+    ctx.fillText(val, marginLeft - 6, y);
+    ctx.strokeStyle = '#1a1a2e';
+    ctx.beginPath();
+    ctx.moveTo(marginLeft, y);
+    ctx.lineTo(marginLeft + plotW, y);
+    ctx.stroke();
+  }
+
+  // Y label
+  ctx.save();
+  ctx.translate(14, marginTop + plotH / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = '#888';
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(yLabel, 0, 0);
+  ctx.restore();
+
+  // X label
+  ctx.fillStyle = '#888';
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Trial #', marginLeft + plotW / 2, h - 6);
+
+  // Bars
+  const barWidth = Math.max(1, Math.min(20, plotW / data.length - 1));
+  const totalBarSpace = data.length * (barWidth + 1);
+  const offsetX = Math.max(0, (plotW - totalBarSpace) / 2);
+
+  data.forEach((d, i) => {
+    const barH = (d.value / maxVal) * plotH;
+    const x = marginLeft + offsetX + i * (barWidth + 1);
+    const y = marginTop + plotH - barH;
+    ctx.fillStyle = colorFn(d, i);
+    ctx.fillRect(x, y, barWidth, barH);
+  });
+
+  // X-axis labels (sparse if many)
+  ctx.fillStyle = '#888';
+  ctx.font = '9px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  const labelEvery = Math.max(1, Math.floor(data.length / 15));
+  data.forEach((d, i) => {
+    if (i % labelEvery === 0 || i === data.length - 1) {
+      const x = marginLeft + offsetX + i * (barWidth + 1) + barWidth / 2;
+      ctx.fillText(i + 1, x, marginTop + plotH + 4);
+    }
+  });
+}
+
+function renderGraph1() {
+  const maxFlips = parseInt(maxFlipsInput.value) || 500;
+  const data = state.trialResults.map(r => ({
+    value: r.blocksWalked,
+    returnedHome: r.returnedHome,
+  }));
+  drawBarGraph(g1Ctx, graph1Canvas, data, 'Blocks Walked', 'Blocks Walked', (d) => {
+    return d.returnedHome ? '#00e676' : '#ff5252';
+  });
+  // Legend
+  const w = parseFloat(graph1Canvas.style.width) || graph1Canvas.width;
+  const ctx = g1Ctx;
+  ctx.font = '10px sans-serif';
+  ctx.fillStyle = '#00e676';
+  ctx.fillRect(w - 160, 8, 10, 10);
+  ctx.fillStyle = '#aaa';
+  ctx.textAlign = 'left';
+  ctx.fillText('Returned Home', w - 146, 17);
+  ctx.fillStyle = '#ff5252';
+  ctx.fillRect(w - 160, 22, 10, 10);
+  ctx.fillStyle = '#aaa';
+  ctx.fillText('Hit Max Flips', w - 146, 31);
+}
+
+function renderGraph2() {
+  const data = state.trialResults.map(r => ({
+    value: r.farthestDist,
+  }));
+  drawBarGraph(g2Ctx, graph2Canvas, data, 'Farthest Distance', 'Distance (blocks)', () => '#7c4dff');
+}
+
+function renderGraph3() {
+  const w = parseFloat(graph3Canvas.style.width) || graph3Canvas.width;
+  const h = parseFloat(graph3Canvas.style.height) || graph3Canvas.height;
+  const ctx = g3Ctx;
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = '#0a0a14';
+  ctx.fillRect(0, 0, w, h);
+
+  // Axes
+  const marginLeft = 60, marginRight = 20, marginTop = 10, marginBottom = 40;
+  const plotW = w - marginLeft - marginRight;
+  const plotH = h - marginTop - marginBottom;
+
+  ctx.strokeStyle = '#444';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(marginLeft, marginTop);
+  ctx.lineTo(marginLeft, marginTop + plotH);
+  ctx.lineTo(marginLeft + plotW, marginTop + plotH);
+  ctx.stroke();
+
+  ctx.fillStyle = '#555';
+  ctx.font = '14px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Reserved — axes TBD', w / 2, h / 2);
+}
+
+function renderAll() {
+  renderGrid();
+  renderGraph1();
+  renderGraph2();
+  renderGraph3();
+}
+
+// ===== SIMULATION LOGIC =====
+function resetWalk() {
+  state.x = 0;
+  state.y = 0;
+  state.facing = 0; // North
+  state.flips = 0;
+  state.blocksWalked = 0;
+  state.farthestDist = 0;
+  state.path = [{ x: 0, y: 0 }];
+}
+
+function doStep() {
+  // First step starts heading north (already facing 0=North)
+  // Walk one block in current facing direction
+  const dir = DIRECTIONS[state.facing];
+  state.x += dir.dx;
+  state.y += dir.dy;
+  state.blocksWalked++;
+  state.path.push({ x: state.x, y: state.y });
+
+  // Compute distance from home
+  const dist = Math.round(Math.sqrt(state.x * state.x + state.y * state.y));
+  if (dist > state.farthestDist) state.farthestDist = dist;
+
+  // Check if returned home
+  if (state.x === 0 && state.y === 0) {
+    return 'home';
+  }
+
+  // Flip coin and turn
+  state.flips++;
+  const heads = Math.random() < 0.5;
+  if (heads) {
+    // Turn left: counterclockwise
+    state.facing = (state.facing + 3) % 4;
+  } else {
+    // Turn right: clockwise
+    state.facing = (state.facing + 1) % 4;
+  }
+
+  const maxFlips = parseInt(maxFlipsInput.value) || 500;
+  if (state.flips >= maxFlips) {
+    return 'maxFlips';
+  }
+
+  return 'continue';
+}
+
+function updateStats() {
+  document.getElementById('statTrial').textContent = `${state.currentTrial + 1} / ${state.totalTrials}`;
+  document.getElementById('statFlips').textContent = state.flips;
+  document.getElementById('statBlocks').textContent = state.blocksWalked;
+  document.getElementById('statFarthest').textContent = state.farthestDist;
+  const completedTrials = state.trialResults.length;
+  if (completedTrials > 0) {
+    const homeCount = state.trialResults.filter(r => r.returnedHome).length;
+    const maxedCount = completedTrials - homeCount;
+    const pct = (homeCount / completedTrials * 100).toFixed(1);
+    document.getElementById('statHomePercent').textContent = `${pct}% (${homeCount} home, ${maxedCount} maxed)`;
+    // Avg point of no return
+    const lostTrials = state.trialResults.filter(r => !r.returnedHome);
+    if (lostTrials.length > 0) {
+      const avgMaxDist = lostTrials.reduce((sum, r) => sum + r.farthestDist, 0) / lostTrials.length;
+      document.getElementById('statNoReturn').textContent = `${avgMaxDist.toFixed(1)} blocks`;
+    } else {
+      document.getElementById('statNoReturn').textContent = '—';
+    }
+  }
+  document.getElementById('statPos').textContent = `(${state.x}, ${state.y})`;
+  document.getElementById('statFacing').textContent = DIRECTIONS[state.facing].name;
+}
+
+function finishTrial(returnedHome) {
+  state.trialResults.push({
+    blocksWalked: state.blocksWalked,
+    farthestDist: state.farthestDist,
+    returnedHome: returnedHome,
+  });
+  state.allPaths.push([...state.path]);
+}
+
+async function runTrialAnimated() {
+  resetWalk();
+  const delay = parseInt(stepDelayInput.value) || 0;
+
+  return new Promise((resolve) => {
+    function step() {
+      if (state.paused) {
+        state.timeoutId = setTimeout(step, 100);
+        return;
+      }
+      if (!state.running) {
+        resolve('stopped');
+        return;
+      }
+
+      const result = doStep();
+      updateStats();
+      renderGrid();
+
+      if (result === 'home') {
+        finishTrial(true);
+        renderGraph1();
+        renderGraph2();
+        resolve('home');
+      } else if (result === 'maxFlips') {
+        finishTrial(false);
+        renderGraph1();
+        renderGraph2();
+        resolve('maxFlips');
+      } else {
+        if (delay > 0) {
+          state.timeoutId = setTimeout(step, delay);
+        } else {
+          // 0ms delay — use requestAnimationFrame for smooth rendering
+          state.animFrameId = requestAnimationFrame(step);
+        }
+      }
+    }
+    step();
+  });
+}
+
+function runTrialInstant() {
+  resetWalk();
+  while (true) {
+    const result = doStep();
+    if (result === 'home') {
+      finishTrial(true);
+      return;
+    }
+    if (result === 'maxFlips') {
+      finishTrial(false);
+      return;
+    }
+  }
+}
+
+async function startSimulation(instant) {
+  state.running = true;
+  state.paused = false;
+  state.instantMode = instant;
+  state.totalTrials = parseInt(numTrialsInput.value) || 1;
+  state.trialResults = [];
+  state.allPaths = [];
+  state.currentTrial = 0;
+
+  btnStart.disabled = true;
+  btnInstant.disabled = true;
+  btnPause.disabled = instant;
+  maxFlipsInput.disabled = true;
+  stepDelayInput.disabled = true;
+  numTrialsInput.disabled = true;
+
+  document.getElementById('statStatus').textContent = instant ? 'Running (Instant)' : 'Running';
+
+  if (instant) {
+    // Run all trials instantly, yield to UI periodically
+    for (let t = 0; t < state.totalTrials; t++) {
+      if (!state.running) break;
+      state.currentTrial = t;
+      runTrialInstant();
+      updateStats();
+      // Yield every 10 trials or on last
+      if (t % 10 === 0 || t === state.totalTrials - 1) {
+        renderAll();
+        await new Promise(r => setTimeout(r, 0));
+      }
+    }
+    renderAll();
+  } else {
+    for (let t = 0; t < state.totalTrials; t++) {
+      if (!state.running) break;
+      state.currentTrial = t;
+      const result = await runTrialAnimated();
+      if (result === 'stopped') break;
+    }
+  }
+
+  endSimulation();
+}
+
+function endSimulation() {
+  state.running = false;
+  state.paused = false;
+  document.getElementById('statStatus').textContent = 'Done';
+  btnStart.disabled = false;
+  btnInstant.disabled = false;
+  btnPause.disabled = true;
+  maxFlipsInput.disabled = false;
+  stepDelayInput.disabled = false;
+  numTrialsInput.disabled = false;
+  renderAll();
+}
+
+function resetSimulation() {
+  state.running = false;
+  state.paused = false;
+  if (state.timeoutId) clearTimeout(state.timeoutId);
+  if (state.animFrameId) cancelAnimationFrame(state.animFrameId);
+  state.trialResults = [];
+  state.allPaths = [];
+  state.currentTrial = 0;
+  state.totalTrials = 0;
+  state.zoom = 1;
+  state.panX = 0;
+  state.panY = 0;
+  resetWalk();
+  updateStats();
+  document.getElementById('statTrial').textContent = '0 / 0';
+  document.getElementById('statHomePercent').textContent = '—';
+  document.getElementById('statNoReturn').textContent = '—';
+  document.getElementById('statStatus').textContent = 'Idle';
+  btnStart.disabled = false;
+  btnInstant.disabled = false;
+  btnPause.disabled = true;
+  maxFlipsInput.disabled = false;
+  stepDelayInput.disabled = false;
+  numTrialsInput.disabled = false;
+  renderAll();
+}
+
+// ===== EVENT LISTENERS =====
+btnStart.addEventListener('click', () => startSimulation(false));
+btnInstant.addEventListener('click', () => startSimulation(true));
+btnPause.addEventListener('click', () => {
+  state.paused = !state.paused;
+  btnPause.textContent = state.paused ? 'Resume' : 'Pause';
+  document.getElementById('statStatus').textContent = state.paused ? 'Paused' : 'Running';
+});
+btnReset.addEventListener('click', resetSimulation);
+
+// Zoom
+document.getElementById('btnZoomIn').addEventListener('click', () => {
+  state.zoom *= 1.3;
+  renderGrid();
+});
+document.getElementById('btnZoomOut').addEventListener('click', () => {
+  state.zoom /= 1.3;
+  renderGrid();
+});
+document.getElementById('btnZoomFit').addEventListener('click', () => {
+  state.zoom = 1;
+  state.panX = 0;
+  state.panY = 0;
+  renderGrid();
+});
+
+// Pan with mouse drag on grid
+let isDragging = false;
+let dragStartX, dragStartY;
+gridCanvas.addEventListener('mousedown', (e) => {
+  isDragging = true;
+  dragStartX = e.clientX - state.panX;
+  dragStartY = e.clientY - state.panY;
+  gridCanvas.style.cursor = 'grabbing';
+});
+window.addEventListener('mousemove', (e) => {
+  if (!isDragging) return;
+  state.panX = e.clientX - dragStartX;
+  state.panY = e.clientY - dragStartY;
+  renderGrid();
+});
+window.addEventListener('mouseup', () => {
+  isDragging = false;
+  gridCanvas.style.cursor = 'grab';
+});
+gridCanvas.style.cursor = 'grab';
+
+// Scroll to zoom on grid
+gridCanvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const factor = e.deltaY < 0 ? 1.1 : 0.9;
+  state.zoom *= factor;
+  renderGrid();
+}, { passive: false });
+
+// ===== INIT =====
+setTimeout(() => {
+  resizeAllCanvases();
+}, 50);
+</script>
+</body>
+</html>
