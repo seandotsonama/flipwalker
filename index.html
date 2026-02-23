@@ -668,11 +668,33 @@ function renderGraph2() {
     returnedHome: r.returnedHome,
     mode: r.mode,
   }));
-  drawBarGraph(g2Ctx, graph2Canvas, data, 'Farthest Distance', 'Distance (blocks)', (d) => {
+  const layout = drawBarGraph(g2Ctx, graph2Canvas, data, 'Farthest Distance', 'Distance (blocks)', (d) => {
     if (!d.returnedHome) return '#ff5252';  // red: hit max flips
     if (isMinTrip(d)) return '#00e676';      // green: minimum trips
     return '#ffff00';                         // yellow: made it home but > min
   });
+
+  // Draw average Point of No Return line
+  const lostData = data.filter(d => !d.returnedHome);
+  if (lostData.length > 0 && layout) {
+    const avgPNR = lostData.reduce((sum, d) => sum + d.value, 0) / lostData.length;
+    const lineY = layout.marginTop + layout.plotH - (avgPNR / layout.maxVal) * layout.plotH;
+    g2Ctx.save();
+    g2Ctx.strokeStyle = '#40c4ff';
+    g2Ctx.lineWidth = 2;
+    g2Ctx.setLineDash([6, 4]);
+    g2Ctx.beginPath();
+    g2Ctx.moveTo(layout.marginLeft, lineY);
+    g2Ctx.lineTo(layout.marginLeft + layout.plotW, lineY);
+    g2Ctx.stroke();
+    g2Ctx.setLineDash([]);
+    g2Ctx.fillStyle = '#40c4ff';
+    g2Ctx.font = 'bold 10px sans-serif';
+    g2Ctx.textAlign = 'right';
+    g2Ctx.textBaseline = 'bottom';
+    g2Ctx.fillText(`Avg PNR: ${avgPNR.toFixed(1)}`, layout.marginLeft + layout.plotW, lineY - 3);
+    g2Ctx.restore();
+  }
 }
 
 function renderGraph3() {
