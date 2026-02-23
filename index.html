@@ -234,8 +234,8 @@
       <div class="legend" id="graph1Legend">
         <span style="display:inline-flex;align-items:center;gap:3px;margin-left:10px;font-size:10px;font-weight:400;text-transform:none;letter-spacing:0;">
           <span style="width:8px;height:8px;background:#00e676;border-radius:2px;display:inline-block;"></span> Min Trip
-          <span style="width:8px;height:8px;background:#ffff00;border-radius:2px;display:inline-block;margin-left:6px;"></span> Home (longer)
-          <span style="width:8px;height:8px;background:#ff5252;border-radius:2px;display:inline-block;margin-left:6px;"></span> Max Flips
+          <span style="width:8px;height:8px;background:#ffff00;border-radius:2px;display:inline-block;margin-left:6px;"></span> Home Success
+          <span style="width:8px;height:8px;background:#ff5252;border-radius:2px;display:inline-block;margin-left:6px;"></span> Max Flips "Lost"
         </span>
       </div>
     </div>
@@ -244,7 +244,16 @@
     </div>
   </div>
   <div class="panel">
-    <div class="panel-header">Graph 2: Farthest Distance from Home per Trial (Point of No Return for failed walks)</div>
+    <div class="panel-header">
+      <span>Graph 2: Farthest Distance from Home per Trial (Point of No Return for failed walks)</span>
+      <div class="legend" id="graph2Legend">
+        <span style="display:inline-flex;align-items:center;gap:3px;margin-left:10px;font-size:10px;font-weight:400;text-transform:none;letter-spacing:0;">
+          <span style="width:8px;height:8px;background:#00e676;border-radius:2px;display:inline-block;"></span> Min Trip
+          <span style="width:8px;height:8px;background:#ffff00;border-radius:2px;display:inline-block;margin-left:6px;"></span> Home Success
+          <span style="width:8px;height:8px;background:#ff5252;border-radius:2px;display:inline-block;margin-left:6px;"></span> Max Flips "Lost"
+        </span>
+      </div>
+    </div>
     <div class="panel-body">
       <canvas id="graph2Canvas"></canvas>
     </div>
