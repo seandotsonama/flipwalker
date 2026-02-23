@@ -172,12 +172,19 @@
 <body>
 <header>
   <h1>FLIPWALKER</h1>
-  <span class="subtitle">Random Walk Coin-Flip Simulator</span>
+  <span class="subtitle">Random Walk Simulator — Coin Flip or D4 Dice</span>
 </header>
 
 <div class="controls">
   <div class="control-group">
-    <label>Max Flips:</label>
+    <label>Mode:</label>
+    <select id="walkMode" style="padding:6px 8px;background:#1a1a2e;border:1px solid #333366;border-radius:6px;color:#fff;font-size:13px;">
+      <option value="flip">Coin Flip</option>
+      <option value="d4">D4 Dice</option>
+    </select>
+  </div>
+  <div class="control-group">
+    <label id="maxFlipsLabel">Max Flips:</label>
     <input type="number" id="maxFlips" value="500" min="1" max="100000">
   </div>
   <div class="control-group">
@@ -703,15 +710,28 @@ function doStep() {
     return 'home';
   }
 
-  // Flip coin and turn
+  // Determine next direction
   state.flips++;
-  const heads = Math.random() < 0.5;
-  if (heads) {
-    // Turn left: counterclockwise
-    state.facing = (state.facing + 3) % 4;
+  const mode = document.getElementById('walkMode').value;
+  if (mode === 'd4') {
+    // D4: 1=straight, 2=left, 3=right, 4=backward
+    const roll = Math.floor(Math.random() * 4) + 1;
+    if (roll === 2) {
+      state.facing = (state.facing + 3) % 4; // left
+    } else if (roll === 3) {
+      state.facing = (state.facing + 1) % 4; // right
+    } else if (roll === 4) {
+      state.facing = (state.facing + 2) % 4; // backward
+    }
+    // roll === 1: straight, no change
   } else {
-    // Turn right: clockwise
-    state.facing = (state.facing + 1) % 4;
+    // Coin flip: heads=left, tails=right
+    const heads = Math.random() < 0.5;
+    if (heads) {
+      state.facing = (state.facing + 3) % 4;
+    } else {
+      state.facing = (state.facing + 1) % 4;
+    }
   }
 
   const maxFlips = parseInt(maxFlipsInput.value) || 500;
@@ -827,6 +847,7 @@ async function startSimulation(instant) {
   maxFlipsInput.disabled = true;
   stepDelayInput.disabled = true;
   numTrialsInput.disabled = true;
+  document.getElementById('walkMode').disabled = true;
 
   document.getElementById('statStatus').textContent = instant ? 'Running (Instant)' : 'Running';
 
@@ -866,6 +887,7 @@ function endSimulation() {
   maxFlipsInput.disabled = false;
   stepDelayInput.disabled = false;
   numTrialsInput.disabled = false;
+  document.getElementById('walkMode').disabled = false;
   renderAll();
 }
 
@@ -893,6 +915,7 @@ function resetSimulation() {
   maxFlipsInput.disabled = false;
   stepDelayInput.disabled = false;
   numTrialsInput.disabled = false;
+  document.getElementById('walkMode').disabled = false;
   renderAll();
 }
 
@@ -905,6 +928,12 @@ btnPause.addEventListener('click', () => {
   document.getElementById('statStatus').textContent = state.paused ? 'Paused' : 'Running';
 });
 btnReset.addEventListener('click', resetSimulation);
+
+// Mode toggle — update labels
+document.getElementById('walkMode').addEventListener('change', (e) => {
+  const isD4 = e.target.value === 'd4';
+  document.getElementById('maxFlipsLabel').textContent = isD4 ? 'Max Rolls:' : 'Max Flips:';
+});
 
 // Zoom
 document.getElementById('btnZoomIn').addEventListener('click', () => {
