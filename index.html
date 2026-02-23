@@ -605,16 +605,24 @@ function drawBarGraph(ctx, canvas, data, title, yLabel, colorFn) {
   });
 }
 
+function isMinTrip(d) {
+  // Coin flip minimum: 4 blocks (N, turn, side, turn, back pattern)
+  // D4 minimum: 2 blocks / 1 roll (N then roll backward, walk home)
+  const minBlocks = d.mode === 'd4' ? 2 : 4;
+  return d.returnedHome && d.blocksWalked === minBlocks;
+}
+
 function renderGraph1() {
   const data = state.trialResults.map(r => ({
     value: r.blocksWalked,
     blocksWalked: r.blocksWalked,
     returnedHome: r.returnedHome,
+    mode: r.mode,
   }));
   drawBarGraph(g1Ctx, graph1Canvas, data, 'Blocks Walked', 'Blocks Walked', (d) => {
-    if (!d.returnedHome) return '#ff5252';       // red: hit max flips
-    if (d.blocksWalked === 4) return '#00e676';   // green: minimum 4-block trip
-    return '#ffff00';                              // yellow: made it home but > 4
+    if (!d.returnedHome) return '#ff5252';  // red: hit max flips
+    if (isMinTrip(d)) return '#00e676';      // green: minimum possible trip
+    return '#ffff00';                         // yellow: made it home but > min
   });
   // Legend
   const w = parseFloat(graph1Canvas.style.width) || graph1Canvas.width;
@@ -624,11 +632,11 @@ function renderGraph1() {
   ctx.fillRect(w - 180, 8, 10, 10);
   ctx.fillStyle = '#aaa';
   ctx.textAlign = 'left';
-  ctx.fillText('4 Blocks (min trip)', w - 166, 17);
+  ctx.fillText('Min Trip (shortest)', w - 166, 17);
   ctx.fillStyle = '#ffff00';
   ctx.fillRect(w - 180, 22, 10, 10);
   ctx.fillStyle = '#aaa';
-  ctx.fillText('Home (> 4 blocks)', w - 166, 31);
+  ctx.fillText('Home (longer)', w - 166, 31);
   ctx.fillStyle = '#ff5252';
   ctx.fillRect(w - 180, 36, 10, 10);
   ctx.fillStyle = '#aaa';
@@ -640,10 +648,11 @@ function renderGraph2() {
     value: r.farthestDist,
     blocksWalked: r.blocksWalked,
     returnedHome: r.returnedHome,
+    mode: r.mode,
   }));
   drawBarGraph(g2Ctx, graph2Canvas, data, 'Farthest Distance', 'Distance (blocks)', (d) => {
-    if (d.returnedHome && d.blocksWalked === 4) return '#00e676'; // green: 4-block trips
-    return '#7c4dff';                                              // purple: everything else
+    if (isMinTrip(d)) return '#00e676'; // green: minimum trips
+    return '#7c4dff';                    // purple: everything else
   });
 }
 
@@ -771,6 +780,7 @@ function finishTrial(returnedHome) {
     blocksWalked: state.blocksWalked,
     farthestDist: state.farthestDist,
     returnedHome: returnedHome,
+    mode: document.getElementById('walkMode').value,
   });
   state.allPaths.push([...state.path]);
 }
