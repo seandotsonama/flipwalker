@@ -30,7 +30,7 @@ The question: *How often do you actually make it back? And does a D4 change the 
 - **Multi-trial support** — run N simulations back-to-back with all paths overlaid in different colors
 - **Start / Pause / Resume / Reset** controls
 - **"Avg Point of No Return" circle** — a dashed red circle showing the average farthest distance reached by walkers who never made it home. Once you cross it, odds are you're lost.
-- **Color-coded graphs** — quickly see which trials made it home in 4 blocks (the minimum), which took longer, and which got lost
+- **Color-coded graphs** — mode-aware minimum trip highlighting (Coin Flip: 4 blocks, D4: 2 blocks/1 roll), plus color coding for longer trips and lost walkers
 
 ## Stats Tracked
 
@@ -47,8 +47,8 @@ The question: *How often do you actually make it back? And does a D4 change the 
 
 ## Graphs
 
-1. **Blocks Walked per Trial** — Green = 4 blocks (minimum round trip), Yellow = made it home (> 4 blocks), Red = hit max flips/rolls
-2. **Farthest Distance per Trial** — Green for 4-block trips, Purple for everything else
+1. **Blocks Walked per Trial** — Green = minimum trip (Coin Flip: 4 blocks, D4: 2 blocks), Yellow = made it home (longer), Red = hit max flips/rolls
+2. **Farthest Distance per Trial** — Green for minimum trips, Purple for everything else
 3. **Reserved** — Empty graph with axes ready for a future metric
 
 ## Controls
