@@ -250,7 +250,7 @@
     </div>
   </div>
   <div class="panel">
-    <div class="panel-header">Graph 3: (Reserved)</div>
+    <div class="panel-header">Graph 3: Trial Outcome Breakdown</div>
     <div class="panel-body">
       <canvas id="graph3Canvas"></canvas>
     </div>
@@ -683,23 +683,100 @@ function renderGraph3() {
   ctx.fillStyle = '#0a0a14';
   ctx.fillRect(0, 0, w, h);
 
-  // Axes
-  const marginLeft = 60, marginRight = 20, marginTop = 10, marginBottom = 40;
-  const plotW = w - marginLeft - marginRight;
-  const plotH = h - marginTop - marginBottom;
+  const total = state.trialResults.length;
+  if (total === 0) {
+    ctx.fillStyle = '#555';
+    ctx.font = '14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('No data yet', w / 2, h / 2);
+    return;
+  }
 
-  ctx.strokeStyle = '#444';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(marginLeft, marginTop);
-  ctx.lineTo(marginLeft, marginTop + plotH);
-  ctx.lineTo(marginLeft + plotW, marginTop + plotH);
-  ctx.stroke();
+  // Compute Point of No Return radius
+  const lostTrials = state.trialResults.filter(r => !r.returnedHome);
+  const pnr = lostTrials.length > 0
+    ? lostTrials.reduce((sum, r) => sum + r.farthestDist, 0) / lostTrials.length
+    : Infinity;
 
-  ctx.fillStyle = '#555';
-  ctx.font = '14px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('Reserved — axes TBD', w / 2, h / 2);
+  // Categorize trials
+  let perfect = 0, homeUnderPNR = 0, homeOverPNR = 0, lost = 0;
+  state.trialResults.forEach(r => {
+    if (!r.returnedHome) {
+      lost++;
+    } else if (isMinTrip(r)) {
+      perfect++;
+    } else if (r.farthestDist <= pnr) {
+      homeUnderPNR++;
+    } else {
+      homeOverPNR++;
+    }
+  });
+
+  const slices = [
+    { label: 'Perfect Trip', count: perfect, color: '#00e676' },
+    { label: 'Home (under PNR)', count: homeUnderPNR, color: '#ffff00' },
+    { label: 'Home (over PNR)', count: homeOverPNR, color: '#ff9100' },
+    { label: 'Lost', count: lost, color: '#ff5252' },
+  ].filter(s => s.count > 0);
+
+  // Draw pie chart
+  const centerX = w * 0.38;
+  const centerY = h / 2;
+  const radius = Math.min(w * 0.32, h * 0.42);
+  let startAngle = -Math.PI / 2;
+
+  slices.forEach(slice => {
+    const sliceAngle = (slice.count / total) * Math.PI * 2;
+    const endAngle = startAngle + sliceAngle;
+
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY);
+    ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+    ctx.closePath();
+    ctx.fillStyle = slice.color;
+    ctx.fill();
+    ctx.strokeStyle = '#0a0a14';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Label on slice if large enough
+    if (sliceAngle > 0.15) {
+      const midAngle = startAngle + sliceAngle / 2;
+      const labelR = radius * 0.65;
+      const lx = centerX + Math.cos(midAngle) * labelR;
+      const ly = centerY + Math.sin(midAngle) * labelR;
+      const pct = ((slice.count / total) * 100).toFixed(1);
+      ctx.fillStyle = '#000';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`${pct}%`, lx, ly);
+    }
+
+    startAngle = endAngle;
+  });
+
+  // Legend on right side
+  const legendX = w * 0.68;
+  let legendY = h * 0.2;
+  const lineHeight = 22;
+
+  slices.forEach(slice => {
+    const pct = ((slice.count / total) * 100).toFixed(1);
+    ctx.fillStyle = slice.color;
+    ctx.fillRect(legendX, legendY - 6, 12, 12);
+    ctx.fillStyle = '#ccc';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`${slice.label}: ${slice.count} (${pct}%)`, legendX + 18, legendY);
+    legendY += lineHeight;
+  });
+
+  // Total label
+  ctx.fillStyle = '#888';
+  ctx.font = '10px sans-serif';
+  ctx.fillText(`Total: ${total} trials`, legendX, legendY + 6);
 }
 
 function renderAll() {
