@@ -207,6 +207,7 @@
   <div class="stat"><span class="stat-label">Blocks Walked:</span><span class="stat-value" id="statBlocks">0</span></div>
   <div class="stat"><span class="stat-label">Farthest from Home:</span><span class="stat-value" id="statFarthest">0</span></div>
   <div class="stat"><span class="stat-label">% Made It Home:</span><span class="stat-value" id="statHomePercent">—</span></div>
+  <div class="stat"><span class="stat-label">Avg Blocks Home:</span><span class="stat-value" id="statAvgHome">—</span></div>
   <div class="stat"><span class="stat-label">Avg Point of No Return:</span><span class="stat-value" id="statNoReturn">—</span></div>
   <div class="stat"><span class="stat-label">Position:</span><span class="stat-value" id="statPos">(0, 0)</span></div>
   <div class="stat"><span class="stat-label">Facing:</span><span class="stat-value" id="statFacing">North</span></div>
@@ -612,6 +613,8 @@ function drawBarGraph(ctx, canvas, data, title, yLabel, colorFn) {
       ctx.fillText(i + 1, x, marginTop + plotH + 4);
     }
   });
+
+  return { marginLeft, marginRight, marginTop, marginBottom, plotW, plotH, maxVal };
 }
 
 function isMinTrip(d) {
@@ -628,11 +631,34 @@ function renderGraph1() {
     returnedHome: r.returnedHome,
     mode: r.mode,
   }));
-  drawBarGraph(g1Ctx, graph1Canvas, data, 'Blocks Walked', 'Blocks Walked', (d) => {
+  const layout = drawBarGraph(g1Ctx, graph1Canvas, data, 'Blocks Walked', 'Blocks Walked', (d) => {
     if (!d.returnedHome) return '#ff5252';  // red: hit max flips
     if (isMinTrip(d)) return '#00e676';      // green: minimum possible trip
     return '#ffff00';                         // yellow: made it home but > min
   });
+
+  // Draw average line for home trips
+  const homeData = data.filter(d => d.returnedHome);
+  if (homeData.length > 0 && layout) {
+    const avg = homeData.reduce((sum, d) => sum + d.value, 0) / homeData.length;
+    const w = parseFloat(graph1Canvas.style.width) || graph1Canvas.width;
+    const lineY = layout.marginTop + layout.plotH - (avg / layout.maxVal) * layout.plotH;
+    g1Ctx.save();
+    g1Ctx.strokeStyle = '#40c4ff';
+    g1Ctx.lineWidth = 2;
+    g1Ctx.setLineDash([6, 4]);
+    g1Ctx.beginPath();
+    g1Ctx.moveTo(layout.marginLeft, lineY);
+    g1Ctx.lineTo(layout.marginLeft + layout.plotW, lineY);
+    g1Ctx.stroke();
+    g1Ctx.setLineDash([]);
+    g1Ctx.fillStyle = '#40c4ff';
+    g1Ctx.font = 'bold 10px sans-serif';
+    g1Ctx.textAlign = 'right';
+    g1Ctx.textBaseline = 'bottom';
+    g1Ctx.fillText(`Avg Home: ${avg.toFixed(1)}`, layout.marginLeft + layout.plotW, lineY - 3);
+    g1Ctx.restore();
+  }
 }
 
 function renderGraph2() {
@@ -754,7 +780,15 @@ function updateStats() {
     const homeCount = state.trialResults.filter(r => r.returnedHome).length;
     const maxedCount = completedTrials - homeCount;
     const pct = (homeCount / completedTrials * 100).toFixed(1);
-    document.getElementById('statHomePercent').textContent = `${pct}% (${homeCount} home, ${maxedCount} maxed)`;
+    document.getElementById('statHomePercent').textContent = `${pct}% (${homeCount} home, ${maxedCount} lost)`;
+    // Avg blocks for trips that made it home
+    const homeTrials = state.trialResults.filter(r => r.returnedHome);
+    if (homeTrials.length > 0) {
+      const avgHome = homeTrials.reduce((sum, r) => sum + r.blocksWalked, 0) / homeTrials.length;
+      document.getElementById('statAvgHome').textContent = `${avgHome.toFixed(1)} blocks`;
+    } else {
+      document.getElementById('statAvgHome').textContent = '—';
+    }
     // Avg point of no return
     const lostTrials = state.trialResults.filter(r => !r.returnedHome);
     if (lostTrials.length > 0) {
@@ -910,6 +944,7 @@ function resetSimulation() {
   updateStats();
   document.getElementById('statTrial').textContent = '0 / 0';
   document.getElementById('statHomePercent').textContent = '—';
+  document.getElementById('statAvgHome').textContent = '—';
   document.getElementById('statNoReturn').textContent = '—';
   document.getElementById('statStatus').textContent = 'Idle';
   btnStart.disabled = false;
