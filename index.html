@@ -228,7 +228,16 @@
     </div>
   </div>
   <div class="panel">
-    <div class="panel-header">Graph 1: Blocks Walked per Trial</div>
+    <div class="panel-header">
+      <span>Graph 1: Blocks Walked per Trial</span>
+      <div class="legend" id="graph1Legend">
+        <span style="display:inline-flex;align-items:center;gap:3px;margin-left:10px;font-size:10px;font-weight:400;text-transform:none;letter-spacing:0;">
+          <span style="width:8px;height:8px;background:#00e676;border-radius:2px;display:inline-block;"></span> Min Trip
+          <span style="width:8px;height:8px;background:#ffff00;border-radius:2px;display:inline-block;margin-left:6px;"></span> Home (longer)
+          <span style="width:8px;height:8px;background:#ff5252;border-radius:2px;display:inline-block;margin-left:6px;"></span> Max Flips
+        </span>
+      </div>
+    </div>
     <div class="panel-body">
       <canvas id="graph1Canvas"></canvas>
     </div>
@@ -624,23 +633,6 @@ function renderGraph1() {
     if (isMinTrip(d)) return '#00e676';      // green: minimum possible trip
     return '#ffff00';                         // yellow: made it home but > min
   });
-  // Legend
-  const w = parseFloat(graph1Canvas.style.width) || graph1Canvas.width;
-  const ctx = g1Ctx;
-  ctx.font = '10px sans-serif';
-  ctx.fillStyle = '#00e676';
-  ctx.fillRect(w - 180, 8, 10, 10);
-  ctx.fillStyle = '#aaa';
-  ctx.textAlign = 'left';
-  ctx.fillText('Min Trip (shortest)', w - 166, 17);
-  ctx.fillStyle = '#ffff00';
-  ctx.fillRect(w - 180, 22, 10, 10);
-  ctx.fillStyle = '#aaa';
-  ctx.fillText('Home (longer)', w - 166, 31);
-  ctx.fillStyle = '#ff5252';
-  ctx.fillRect(w - 180, 36, 10, 10);
-  ctx.fillStyle = '#aaa';
-  ctx.fillText('Hit Max Flips', w - 166, 45);
 }
 
 function renderGraph2() {
