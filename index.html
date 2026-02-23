@@ -651,8 +651,9 @@ function renderGraph2() {
     mode: r.mode,
   }));
   drawBarGraph(g2Ctx, graph2Canvas, data, 'Farthest Distance', 'Distance (blocks)', (d) => {
-    if (isMinTrip(d)) return '#00e676'; // green: minimum trips
-    return '#7c4dff';                    // purple: everything else
+    if (!d.returnedHome) return '#ff5252';  // red: hit max flips
+    if (isMinTrip(d)) return '#00e676';      // green: minimum trips
+    return '#ffff00';                         // yellow: made it home but > min
   });
 }
 
