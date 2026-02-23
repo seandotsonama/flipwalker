@@ -1165,6 +1165,11 @@ gridCanvas.addEventListener('wheel', (e) => {
   renderGrid();
 }, { passive: false });
 
+// ===== GRAPH TOOLTIP =====
+const graphTooltip = document.createElement('div');
+graphTooltip.style.cssText = 'position:fixed;padding:6px 10px;background:#1a1a2e;border:1px solid #ce93d8;border-radius:6px;color:#e0e0e0;font-size:11px;pointer-events:none;z-index:999;display:none;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.5);';
+document.body.appendChild(graphTooltip);
+
 // ===== GRAPH CLICK TO SELECT TRIAL =====
 function getTrialIndexFromClick(canvas, e) {
   const rect = canvas.getBoundingClientRect();
@@ -1202,15 +1207,30 @@ function handleGraphClick(e) {
 graph1Canvas.addEventListener('click', handleGraphClick);
 graph2Canvas.addEventListener('click', handleGraphClick);
 
-// Cursor style on graph hover
+// Cursor style + tooltip on graph hover
 [graph1Canvas, graph2Canvas].forEach(canvas => {
   canvas.addEventListener('mousemove', function(e) {
     if (state.running || state.trialResults.length === 0) {
       this.style.cursor = 'default';
+      graphTooltip.style.display = 'none';
       return;
     }
     const idx = getTrialIndexFromClick(this, e);
-    this.style.cursor = idx >= 0 ? 'pointer' : 'default';
+    if (idx >= 0) {
+      this.style.cursor = 'pointer';
+      const r = state.trialResults[idx];
+      const outcome = r.returnedHome ? 'Home' : 'Lost';
+      graphTooltip.innerHTML = `<strong>Trial #${idx + 1}</strong> — ${r.blocksWalked} blocks, ${outcome}<br><span style="color:#ce93d8;">Click to view path on grid</span>`;
+      graphTooltip.style.display = 'block';
+      graphTooltip.style.left = (e.clientX + 12) + 'px';
+      graphTooltip.style.top = (e.clientY - 10) + 'px';
+    } else {
+      this.style.cursor = 'default';
+      graphTooltip.style.display = 'none';
+    }
+  });
+  canvas.addEventListener('mouseleave', () => {
+    graphTooltip.style.display = 'none';
   });
 });
 
