@@ -734,12 +734,13 @@ function renderGraph3() {
     }
   });
 
-  const slices = [
+  const allSlices = [
     { label: 'Perfect Trip', count: perfect, color: '#00e676' },
     { label: 'Home (under PNR)', count: homeUnderPNR, color: '#ffff00' },
     { label: 'Home (over PNR)', count: homeOverPNR, color: '#ff9100' },
     { label: 'Lost', count: lost, color: '#ff5252' },
-  ].filter(s => s.count > 0);
+  ];
+  const slices = allSlices.filter(s => s.count > 0);
 
   // Draw pie chart
   const centerX = w * 0.38;
@@ -783,11 +784,11 @@ function renderGraph3() {
   let legendY = h * 0.2;
   const lineHeight = 22;
 
-  slices.forEach(slice => {
+  allSlices.forEach(slice => {
     const pct = ((slice.count / total) * 100).toFixed(1);
     ctx.fillStyle = slice.color;
     ctx.fillRect(legendX, legendY - 6, 12, 12);
-    ctx.fillStyle = '#ccc';
+    ctx.fillStyle = slice.count > 0 ? '#ccc' : '#666';
     ctx.font = '11px sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';

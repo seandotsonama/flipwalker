@@ -40,16 +40,17 @@ The question: *How often do you actually make it back? And does a D4 change the 
 | Flips/Rolls | Coin flips or dice rolls in the current trial |
 | Blocks Walked | Steps taken in the current trial |
 | Farthest from Home | Max straight-line distance from (0,0) in the current trial (Euclidean, rounded) |
-| % Made It Home | Percentage of completed trials that returned to (0,0), with counts |
+| % Made It Home | Percentage of completed trials that returned to (0,0), with home/lost counts |
+| Avg Blocks Home | Average number of blocks walked for trials that made it home |
 | Avg Point of No Return | Average max distance of "lost" trials (hit max flips/rolls without returning) |
 | Position | Current (x, y) coordinates |
 | Facing | Current compass direction (N/E/S/W) |
 
 ## Graphs
 
-1. **Blocks Walked per Trial** — Green = minimum trip (Coin Flip: 4 blocks, D4: 2 blocks), Yellow = made it home (longer), Red = hit max flips/rolls
-2. **Farthest Distance per Trial** — Green for minimum trips, Purple for everything else
-3. **Reserved** — Empty graph with axes ready for a future metric
+1. **Blocks Walked per Trial** — Green = minimum trip (Coin Flip: 4 blocks, D4: 2 blocks), Yellow = made it home (longer), Red = hit max flips/rolls. Blue dashed line = average blocks for home trips.
+2. **Farthest Distance from Home per Trial** — Same color coding as Graph 1. Blue dashed line = average Point of No Return distance.
+3. **Trial Outcome Breakdown (Pie Chart)** — Green = perfect trips, Yellow = home (stayed under PNR), Orange = home (crossed PNR), Red = lost. All four categories always shown in legend.
 
 ## Controls
 
