@@ -226,7 +226,7 @@
 <div class="main-content">
   <div class="panel">
     <div class="panel-header">
-      <span>Grid View</span>
+      <span>Grid View <span id="gridSelectionLabel" style="color:#ce93d8;font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;"></span></span>
       <div class="zoom-controls">
         <button id="btnZoomIn">+</button>
         <button id="btnZoomOut">−</button>
@@ -315,6 +315,8 @@ let state = {
   // Animation
   animFrameId: null,
   timeoutId: null,
+  // Trial selection (click on graph bar)
+  selectedTrial: -1, // -1 = none selected
 };
 
 // ===== DOM =====
@@ -469,14 +471,20 @@ function renderGrid() {
   ctx.textBaseline = 'bottom';
   ctx.fillText('HOME', originScreen.sx, originScreen.sy - Math.max(6, cellSize * 0.25));
 
-  // Draw all completed paths
-  state.allPaths.forEach((path, idx) => {
-    drawPath(ctx, path, TRAIL_COLORS[idx % TRAIL_COLORS.length], cellSize, toScreen, 0.6);
-  });
+  // Draw paths — if a trial is selected, show only that one
+  if (state.selectedTrial >= 0 && state.selectedTrial < state.allPaths.length) {
+    const idx = state.selectedTrial;
+    drawPath(ctx, state.allPaths[idx], '#ce93d8', cellSize, toScreen, 1); // purple highlight
+  } else {
+    // Draw all completed paths
+    state.allPaths.forEach((path, idx) => {
+      drawPath(ctx, path, TRAIL_COLORS[idx % TRAIL_COLORS.length], cellSize, toScreen, 0.6);
+    });
 
-  // Draw current active path
-  if (state.path.length > 1) {
-    drawPath(ctx, state.path, TRAIL_COLORS[state.currentTrial % TRAIL_COLORS.length], cellSize, toScreen, 1);
+    // Draw current active path
+    if (state.path.length > 1) {
+      drawPath(ctx, state.path, TRAIL_COLORS[state.currentTrial % TRAIL_COLORS.length], cellSize, toScreen, 1);
+    }
   }
 
   // "Point of No Return" circle — avg farthest distance of lost trials
@@ -543,7 +551,7 @@ function drawPath(ctx, path, color, cellSize, toScreen, alpha) {
 }
 
 // ===== GRAPH RENDERING =====
-function drawBarGraph(ctx, canvas, data, title, yLabel, colorFn) {
+function drawBarGraph(ctx, canvas, data, title, yLabel, colorFn, selectedIndex) {
   const w = parseFloat(canvas.style.width) || canvas.width;
   const h = parseFloat(canvas.style.height) || canvas.height;
   ctx.clearRect(0, 0, w, h);
@@ -615,8 +623,18 @@ function drawBarGraph(ctx, canvas, data, title, yLabel, colorFn) {
     const barH = (d.value / maxVal) * plotH;
     const x = marginLeft + offsetX + i * (barWidth + 1);
     const y = marginTop + plotH - barH;
-    ctx.fillStyle = colorFn(d, i);
+    if (selectedIndex >= 0 && selectedIndex < data.length) {
+      if (i === selectedIndex) {
+        ctx.fillStyle = '#ce93d8'; // purple highlight
+      } else {
+        ctx.globalAlpha = 0.3;
+        ctx.fillStyle = colorFn(d, i);
+      }
+    } else {
+      ctx.fillStyle = colorFn(d, i);
+    }
     ctx.fillRect(x, y, barWidth, barH);
+    ctx.globalAlpha = 1;
   });
 
   // X-axis labels (sparse if many)
@@ -653,7 +671,7 @@ function renderGraph1() {
     if (!d.returnedHome) return '#ff5252';  // red: hit max flips
     if (isMinTrip(d)) return '#00e676';      // green: minimum possible trip
     return '#ffff00';                         // yellow: made it home but > min
-  });
+  }, state.selectedTrial);
 
   // Draw average line for home trips
   const homeData = data.filter(d => d.returnedHome);
@@ -690,7 +708,7 @@ function renderGraph2() {
     if (!d.returnedHome) return '#ff5252';  // red: hit max flips
     if (isMinTrip(d)) return '#00e676';      // green: minimum trips
     return '#ffff00';                         // yellow: made it home but > min
-  });
+  }, state.selectedTrial);
 
   // Draw average Point of No Return line
   const lostData = data.filter(d => !d.returnedHome);
@@ -825,6 +843,15 @@ function renderAll() {
   renderGraph1();
   renderGraph2();
   renderGraph3();
+  // Update selection label
+  const label = document.getElementById('gridSelectionLabel');
+  if (state.selectedTrial >= 0) {
+    const r = state.trialResults[state.selectedTrial];
+    const outcome = r.returnedHome ? 'Home' : 'Lost';
+    label.textContent = `— Trial #${state.selectedTrial + 1} selected (${r.blocksWalked} blocks, ${outcome}) click bar again to deselect`;
+  } else {
+    label.textContent = '';
+  }
 }
 
 // ===== SIMULATION LOGIC =====
@@ -995,6 +1022,7 @@ async function startSimulation(instant) {
   state.trialResults = [];
   state.allPaths = [];
   state.currentTrial = 0;
+  state.selectedTrial = -1;
 
   btnStart.disabled = true;
   btnInstant.disabled = true;
@@ -1055,6 +1083,7 @@ function resetSimulation() {
   state.allPaths = [];
   state.currentTrial = 0;
   state.totalTrials = 0;
+  state.selectedTrial = -1;
   state.zoom = 1;
   state.panX = 0;
   state.panY = 0;
@@ -1135,6 +1164,55 @@ gridCanvas.addEventListener('wheel', (e) => {
   state.zoom *= factor;
   renderGrid();
 }, { passive: false });
+
+// ===== GRAPH CLICK TO SELECT TRIAL =====
+function getTrialIndexFromClick(canvas, e) {
+  const rect = canvas.getBoundingClientRect();
+  const clickX = e.clientX - rect.left;
+  const w = parseFloat(canvas.style.width) || canvas.width;
+  const n = state.trialResults.length;
+  if (n === 0) return -1;
+
+  const marginLeft = 60, marginRight = 20;
+  const plotW = w - marginLeft - marginRight;
+  const barWidth = Math.max(1, Math.min(20, plotW / n - 1));
+  const totalBarSpace = n * (barWidth + 1);
+  const offsetX = Math.max(0, (plotW - totalBarSpace) / 2);
+
+  const relX = clickX - marginLeft - offsetX;
+  if (relX < 0 || relX > totalBarSpace) return -1;
+
+  const idx = Math.floor(relX / (barWidth + 1));
+  return (idx >= 0 && idx < n) ? idx : -1;
+}
+
+function handleGraphClick(e) {
+  if (state.running) return; // don't allow selection during a run
+  const idx = getTrialIndexFromClick(this, e);
+  if (idx < 0) {
+    state.selectedTrial = -1;
+  } else if (idx === state.selectedTrial) {
+    state.selectedTrial = -1; // toggle off
+  } else {
+    state.selectedTrial = idx;
+  }
+  renderAll();
+}
+
+graph1Canvas.addEventListener('click', handleGraphClick);
+graph2Canvas.addEventListener('click', handleGraphClick);
+
+// Cursor style on graph hover
+[graph1Canvas, graph2Canvas].forEach(canvas => {
+  canvas.addEventListener('mousemove', function(e) {
+    if (state.running || state.trialResults.length === 0) {
+      this.style.cursor = 'default';
+      return;
+    }
+    const idx = getTrialIndexFromClick(this, e);
+    this.style.cursor = idx >= 0 ? 'pointer' : 'default';
+  });
+});
 
 // ===== INIT =====
 setTimeout(() => {
